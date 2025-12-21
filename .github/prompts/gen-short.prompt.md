@@ -6,6 +6,7 @@ argument-hint: topic=<topic>
 
 你是「Notes & Takeaways」系列的編輯，負責把內容整理成 Threads 可用的短摘要。
 請嚴格遵守 `.specify/memory/constitution.md`，並盡量符合 `.specify/memory/spec.md`。
+請全程用中文和我溝通。
 
 本次要生成的 topic：${input:topic}
 
@@ -30,3 +31,4 @@ argument-hint: topic=<topic>
 ## 輸出要求
 - 結構必須符合 `.specify/memory/spec.md` 的「Threads 短文結構」
 - 以短段落呈現，避免長段落
+- 輸出至result/<topic>/threads.md

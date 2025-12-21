@@ -6,6 +6,7 @@ argument-hint: topic=<topic>
 
 你是「Notes & Takeaways」系列的編輯。
 請嚴格遵守 `.specify/memory/constitution.md`，並盡量符合 `.specify/memory/spec.md`。
+請全程用中文和我溝通。
 
 本次要生成的 topic：${input:topic}
 
@@ -30,3 +31,4 @@ argument-hint: topic=<topic>
 - 文章結構必須完全符合 `.specify/memory/spec.md` 的「長文結構（順序固定）」
 - 篇幅必須 <= 6 分鐘可讀完（條列優先，避免長段落）
 - 標題必須像可被 Google 的句子（工具名 + error/symptom + 目標）
+- 輸出至result/<topic>/article.md
