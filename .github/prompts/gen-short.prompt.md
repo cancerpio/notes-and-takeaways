@@ -10,7 +10,7 @@ argument-hint: topic=<topic>
 本次要生成的 topic：${input:topic}
 
 ## 防呆
-- 若目前 git branch 是 `master`，你必須拒絕生成，並提醒使用者切到 `post/${input:topic}`。
+- 若目前 git branch 是 `master`，你必須拒絕生成，並提醒使用者切到文章分支，例如: `post/${input:topic}`。
 
 ## 讀取範圍（只允許）
 - material/${input:topic}/ 底下所有 .md
