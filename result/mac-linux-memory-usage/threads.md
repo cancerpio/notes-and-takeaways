@@ -1,23 +1,22 @@
-問題一句話
-macOS / Linux 顯示記憶體高使用但系統仍流暢，該怎麼判斷是否需要處理？
+macOS/Linux 上看到「記憶體快滿（31GB/32GB）但壓力低、系統還很順」？多半不是 RAM 不夠，是 OS 在用 RAM 當檔案快取。
 
-解法（可複製）
+解法：不要看 top 的 `unused`，改看「可立即釋放/可用」指標 + swap 活動。
+
 ```bash
-# macOS
+# macOS：看可釋放比例 + swap
 memory_pressure
 
-# Linux
+# Linux：看 available / MemAvailable
 free -h
-# 或
 cat /proc/meminfo | grep MemAvailable
 ```
 
 Verify
-- macOS：`System-wide memory free percentage >= 60%`，且 `Swapins/Swapouts == 0` → ✅ 健康
-- Linux：`Available` 欄位有餘地且無 swap 活動 → ✅ 健康
+- macOS：`System-wide memory free percentage >= 60%` 且 `Swapins/Swapouts = 0` → 多半正常
+- Linux：`free -h` 的 `available` 還有餘裕，且 swap 使用量為 0（或不持續上升）→ 多半正常
+- 危險訊號：free% < 40% 或 swap 開始增加，且你明顯變慢
 
-注意 / rollback
-- 不要常態清除檔案快取或隨意重啟；先紀錄指標（`memory_pressure` / `free -h` / `vmstat`）再處理。
-- 若需改系統參數或新增 swap，先備份/commit 設定並測試，變更後用相同指令驗證。
+注意事項 / rollback
+- 不要為了「看起來空」去常態清快取/重開機；真的有壓力再查高記憶體進程。
 
-#macOS #Linux #memory #sysadmin
+#memory_pressure #MemAvailable #pagecache #swap

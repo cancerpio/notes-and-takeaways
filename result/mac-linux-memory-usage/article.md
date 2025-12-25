@@ -1,62 +1,48 @@
-# macOS / Linux：記憶體顯示高使用但壓力低，如何快速判斷與檢查
+# macOS memory_pressure / Linux free -h：記憶體顯示快滿但壓力低，如何判斷是否真的缺 RAM
 
-**Environment:** macOS (memory_pressure, vm_stat) / Linux (free -h, /proc/meminfo) — local / server
+## Environment
+- macOS / Linux / local（或 server）
 
 ## Symptoms
-- 總記憶體顯示接近滿載（例如 31GB/32GB），但系統仍順暢、少卡頓
-- 活動監視器或指令顯示記憶體壓力為「低」，或 Swap I/O 為 0
-- top 的 `unused` 很小，但沒有單一程式佔大量記憶體
+- top / 活動監視器顯示記憶體快滿（例如 31GB/32GB），但系統仍順暢、記憶體壓力「低」
+- top 的 `unused` 很少，讓你以為「RAM 不夠」
+- 你想確認：到底是正常快取？還是真的要擔心 swap / 記憶體壓縮？
 
-## Quick Fix ✅（可複製）
+## Quick Fix
 ```bash
-# macOS：查看系統可立即釋放的記憶體比例
+# macOS：看「系統可立即釋放」的比例 + swap 活動
 memory_pressure
 
-# Linux：查看 Available 欄位
+# Linux：看 Available（可用，含可釋放快取）
 free -h
 # 或
 cat /proc/meminfo | grep MemAvailable
 ```
-重點：看 macOS 的 `System-wide memory free percentage`（>=60% 通常正常）或 Linux 的 `Available` 欄位；同時確認 Swapins/Swapouts 為 0 即無 swap 活動。
+- 重點：不要只看「總使用量」或 `unused`；改看 macOS 的 `System-wide memory free percentage` / Linux 的 `available`。
+- 同時確認是否有 swap 活動（macOS 的 Swapins/Swapouts、Linux 的 Swap 使用量/活躍度）。
 
-## Why It Happens（1~3 點）
-- 現代 OS 會把閒置記憶體當作檔案快取（macOS 的 Inactive / Linux 的 Page Cache），以提高 I/O 效能。
-- 這些快取是「可立即釋放」的，並非不可回收的占用，所以總使用量高不等於有壓力。
-- 系統也會使用記憶體壓縮（macOS 的 Compressed Memory、Linux 的 zswap/zram）來延緩使用 swap。
+## Why It Happens
+- 現代 OS 會把閒置 RAM 當檔案快取（macOS 的 Inactive / Linux 的 page cache），提升 I/O 效能
+- 這類快取「需要時可釋放」，所以「看起來用很多」不等於「真的有壓力」
+- top 的 `unused` 更像「完全閒置」，不是「可用」；Linux 的 `available` 才接近「真的還能用多少」
 
-## Verify（具體步驟 & 預期）
-1. macOS
-   - 執行：`memory_pressure`
-   - 預期：`System-wide memory free percentage >= 60%` → ✅ 健康；`Swapins: 0`、`Swapouts: 0` → ✅ 無 swap 活動
-   - 危險訊號：`System-wide memory free percentage < 40%` 或有 Swapins/Swapouts → ⚠️ 需調查
-2. Linux
-   - 執行：`free -h`，看 `available` 欄位；或 `cat /proc/meminfo | grep MemAvailable`
-   - 預期：`Available` 與總記憶體相比仍有餘地，且 swap 使用為 0 → ✅ 健康
-   - 危險訊號：`Available` 很低或出現 swap I/O → ⚠️ 找出高記憶體進程（`ps aux --sort=-%mem`）並評估
-3. 範例輸出（參考）
-   - macOS:
-     ```
-     System-wide memory free percentage: 72.41
-     Swapins: 0
-     Swapouts: 0
-     ```
-   - Linux:
-     ```
-                   total        used        free      shared  buff/cache   available
-     Mem:           62Gi       25Gi       2.0Gi       512Mi       35Gi       35Gi
-     Swap:          16Gi         0B         16Gi
-     ```
+## Verify
+1) macOS
+- 執行：`memory_pressure`
+- 期待：
+   - `System-wide memory free percentage >= 60%`：多半正常
+   - `Swapins: 0` 且 `Swapouts: 0`：沒有在用交換空間（通常代表 RAM 還夠）
+- 需要注意：
+   - `System-wide memory free percentage < 40%` 或 Swapins/Swapouts 開始上升，且體感變慢
 
-## Steps when 不健康（簡短）
-- 先備份/紀錄指標（`memory_pressure` / `free -h` / `vmstat`），以便回溯。
-- 找出高記憶體進程：`top` 或 `ps aux --sort=-%mem`，評估是否重啟或調整配置。
-- 若系統頻繁進入 swap：考慮增加實體記憶體、建立/擴充 swap、或調整應用的記憶體限制。
+2) Linux
+- 執行：`free -h`
+- 期待：
+   - `available` 還有餘裕（相對於 total 不是貼地）
+   - `Swap` 行顯示使用量為 0（或很低且不持續上升）
+- 備用：`cat /proc/meminfo | grep MemAvailable` 看 `MemAvailable`
 
-## Notes / Risk & Rollback
-- 不建議常態性清除檔案快取或把重啟當作常態解（會降低效能）。
-- 若你要改系統參數或新增 swap，先 commit/備份設定並測試：變更後用相同指令驗證是否改善（`memory_pressure` / `free -h`）。
-- 延伸關鍵字：memory_pressure、MemAvailable、Page Cache、Compressed Memory、zswap
-
----
-
-**Short summary:** 高記憶體使用量多半由檔案快取造成，不代表系統有問題；先檢查「可用性」與 swap 活動，只有在 free% 很低或有 swap I/O 時才進一步處理。
+## Notes
+- 風險：為了「看起來空」去常態清快取/重開機，通常只會讓效能變差，且治標不治本。
+- Rollback：如果你真的做了調整（例如改 swap 相關設定或應用記憶體限制），用同一組指標回驗（`memory_pressure` / `free -h`）來確認有沒有改善。
+- Keywords：memory_pressure、MemAvailable、page cache、swap
