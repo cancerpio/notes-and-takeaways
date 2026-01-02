@@ -30,5 +30,5 @@ argument-hint: topic=<topic>
 ## 輸出要求
 - 文章結構必須完全符合 `.specify/memory/spec.md` 的「長文結構（順序固定）」
 - 篇幅必須 <= 6 分鐘可讀完（條列優先，避免長段落）
-- 標題必須像可被 Google 的句子（工具名 + error/symptom + 目標）
+- 標題必須像可被 Google 的句子（例如: 工具名 + error/symptom + 目標），並且必須包含最多技術人員會感興趣，或者遇到問題最直覺會想到的關鍵字
 - 輸出至result/<topic>/article.md
